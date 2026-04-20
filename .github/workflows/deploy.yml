@@ -1,0 +1,60 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: project-9a4a9e23-3e25-4c1f-837
+  GAR_LOCATION: us-central1
+  REPOSITORY: my-repo
+  IMAGE: simple-app
+  CLUSTER_NAME: gke-cluster-credits
+  CLUSTER_LOCATION: us-central1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write   # REQUIRED for OIDC
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 🔐 Authenticate using OIDC (NO KEY FILE)
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: projects/252140508794/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+        service_account: github-actions-sa@project-9a4a9e23-3e25-4c1f-837.iam.gserviceaccount.com
+
+    - name: Set up gcloud
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    # 🐳 Build image
+    - name: Build Docker image
+      run: |
+        docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:latest ./app
+
+    # ⬆️ Push image
+    - name: Push Docker image
+      run: |
+        docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:latest
+
+    # ☸️ Get cluster credentials
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials $CLUSTER_NAME --region $CLUSTER_LOCATION
+
+    # 🚀 Deploy to GKE
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f k8s/
+        kubectl rollout restart deployment simple-app
