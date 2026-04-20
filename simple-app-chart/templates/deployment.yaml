@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-app
+  template:
+    metadata:
+      labels:
+        app: simple-app
+    spec:
+      containers:
+      - name: simple-app
+        image: us-central1-docker.pkg.dev/project-9a4a9e23-3e25-4c1f-837/my-repo/simple-app:latest
+        ports:
+        - containerPort: 3000

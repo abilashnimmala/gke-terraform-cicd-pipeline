@@ -1,0 +1,5 @@
+replicaCount: 1
+
+image:
+  repository: us-central1-docker.pkg.dev/project-9a4a9e23-3e25-4c1f-837/my-repo/simple-app
+  tag: latest
